@@ -55,7 +55,7 @@ function testGetOrCreateMonthlySheet() {
 
 function testAppendRows() {
   const ss = getOrCreateMonthlySpreadsheet(new Date());
-  const inputSheet = ss.getSheetByName('入力表');
+  const inputSheet = ss.getSheetByName('入力表1');
   const beforeCount = inputSheet.getLastRow();
 
   appendRowsToInputSheet(ss, [

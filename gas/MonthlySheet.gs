@@ -40,7 +40,7 @@ function getOrCreateMonthlySpreadsheet(date) {
  * @param {Array<{date:string, jobName:string, detail:string, name:string, qty:number, unitPrice:number}>} rows
  */
 function appendRowsToInputSheet(ss, rows) {
-  const sheet = ss.getSheetByName('入力表');
+  const sheet = ss.getSheetByName('入力表1');
   const timestamp = nowString();
   rows.forEach(row => {
     const total = row.qty * row.unitPrice;
