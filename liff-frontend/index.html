@@ -37,46 +37,30 @@
   </div>
 
   <script>
-    const GAS_URL = '<?= gasUrl ?>';
-    const LIFF_ID = '<?= liffId ?>';
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxiaoktuiYe8LUTgQWBCPDwby6P4W5lO0ofzX_r4v6kB8GM3afUN3XeQ1Aja0jokti2mA/exec';
+    const LIFF_ID = '2009725727-3jvV9g52';
 
     let liffProfile = null;
     let masterData = { jobNames: [], dancerNames: [] };
     let rowCount = 0;
 
-    function debugLog(msg) {
-      const el = document.getElementById('loading');
-      el.textContent = msg;
-      console.log('[DEBUG]', msg);
-    }
-
     async function init() {
       try {
-        debugLog('LIFF初期化中... ID=' + LIFF_ID);
         await liff.init({ liffId: LIFF_ID });
 
-        debugLog('LIFF初期化完了 isInClient=' + liff.isInClient() + ' isLoggedIn=' + liff.isLoggedIn());
-
-        if (!liff.isInClient() && !liff.isLoggedIn()) {
-          debugLog('ログインへリダイレクト中...');
+        if (!liff.isLoggedIn()) {
           liff.login();
           return;
         }
 
-        debugLog('プロフィール取得中...');
         try {
           liffProfile = await liff.getProfile();
-          debugLog('プロフィール取得完了: ' + liffProfile.displayName);
-        } catch (e) {
-          debugLog('プロフィール取得スキップ: ' + e.message);
-        }
+        } catch (e) {}
 
-        debugLog('マスタデータ取得中...');
         const res = await fetch(`${GAS_URL}?action=getMaster`);
         const json = await res.json();
         if (json.ok) {
           masterData = json.data;
-          debugLog('マスタ取得完了: 案件=' + masterData.jobNames.length + '件 ダンサー=' + masterData.dancerNames.length + '件');
         }
 
         document.getElementById('loading').style.display = 'none';
@@ -91,15 +75,10 @@
       if (rowCount >= 10) return;
       rowCount++;
       const n = rowCount;
-
       const today = new Date();
       const dateVal = today.toISOString().split('T')[0];
-
-      const jobOptions = masterData.jobNames
-        .map(j => `<option value="${j}">${j}</option>`).join('');
-      const dancerOptions = masterData.dancerNames
-        .map(d => `<option value="${d}">${d}</option>`).join('');
-
+      const jobOptions = masterData.jobNames.map(j => `<option value="${j}">${j}</option>`).join('');
+      const dancerOptions = masterData.dancerNames.map(d => `<option value="${d}">${d}</option>`).join('');
       const card = document.createElement('div');
       card.className = 'row-card';
       card.id = `row-${n}`;
@@ -108,32 +87,11 @@
           <span class="row-number">${n}件目</span>
           ${n > 1 ? `<button class="remove-btn" onclick="removeRow(${n})">✕</button>` : ''}
         </div>
-        <div class="field">
-          <label>日程</label>
-          <input type="date" id="date-${n}" value="${dateVal}" required>
-        </div>
-        <div class="field">
-          <label>案件名</label>
-          <select id="job-${n}" required>
-            <option value="">選択してください</option>
-            ${jobOptions}
-          </select>
-        </div>
-        <div class="field">
-          <label>名前</label>
-          <select id="name-${n}" required>
-            <option value="">選択してください</option>
-            ${dancerOptions}
-          </select>
-        </div>
-        <div class="field">
-          <label>数量</label>
-          <input type="number" id="qty-${n}" value="1" min="1" required>
-        </div>
-        <div class="field">
-          <label>詳細（任意）</label>
-          <input type="text" id="detail-${n}" placeholder="任意">
-        </div>
+        <div class="field"><label>日程</label><input type="date" id="date-${n}" value="${dateVal}" required></div>
+        <div class="field"><label>案件名</label><select id="job-${n}" required><option value="">選択してください</option>${jobOptions}</select></div>
+        <div class="field"><label>名前</label><select id="name-${n}" required><option value="">選択してください</option>${dancerOptions}</select></div>
+        <div class="field"><label>数量</label><input type="number" id="qty-${n}" value="1" min="1" required></div>
+        <div class="field"><label>詳細（任意）</label><input type="text" id="detail-${n}" placeholder="任意"></div>
       `;
       document.getElementById('rows-container').appendChild(card);
     }
@@ -149,11 +107,9 @@
       btn.disabled = true;
       msg.textContent = '送信中...';
       msg.className = '';
-
       try {
         const cards = document.querySelectorAll('.row-card');
         const rows = [];
-
         for (const card of cards) {
           const n = card.id.replace('row-', '');
           const rawDate = document.getElementById(`date-${n}`).value;
@@ -162,27 +118,19 @@
           const name = document.getElementById(`name-${n}`).value;
           const qty = Number(document.getElementById(`qty-${n}`).value);
           const detail = document.getElementById(`detail-${n}`).value;
-
           if (!date || !jobName || !name || !qty) {
             throw new Error(`${n}件目: 必須項目を入力してください`);
           }
           rows.push({ date, jobName, name, qty, detail });
         }
-
-        const payload = {
-          userId: liffProfile ? liffProfile.userId : null,
-          rows
-        };
-
+        const payload = { userId: liffProfile ? liffProfile.userId : null, rows };
         const res = await fetch(GAS_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
         const json = await res.json();
-
         if (!json.ok) throw new Error(json.error || '送信に失敗しました');
-
         msg.textContent = `✅ ${json.count}件を送信しました（${json.date}）`;
         document.getElementById('rows-container').innerHTML = '';
         rowCount = 0;

@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: thp-liff
+    env: static
+    staticPublishPath: ./
+    buildCommand: ""
+    pullRequestPreviewsEnabled: false
